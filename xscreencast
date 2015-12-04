@@ -1,0 +1,81 @@
+#! /usr/bin/perl
+use strict;
+use warnings;
+use Time::HiRes qw(gettimeofday);
+
+my $pid = $$;
+my $window_id;
+my $window_name;
+
+my $convert = '';
+my $remove = '';
+
+$SIG{'INT'} = sub
+{
+  print "\n";
+  system "convert$convert -layers Optimize $window_name.gif\n";
+  system "rm -f$remove";
+  print "Animated GIF is stored in $window_name.gif\n";
+  exit;
+};
+
+
+print "Select window to record.\n";
+open XWININFO, "xwininfo |";
+while (<XWININFO>) {
+  if (/Window id: (0x[0-9a-f]+) (.*)/) {
+    ($window_id, $window_name) = ($1, $2);
+    $window_name =~ s/[^a-z0-9]//ig;
+    print "Using $window_name ($window_id) for recording.\n";
+    last;
+  }
+}
+close XWININFO;
+die "Can not identify window" unless defined $window_id;
+
+print "Press [Print] to start and stop recording.\n";
+print "Press [Ctrl-c] to stop program.\n";
+
+my $time;
+my $recording;
+my $seq = 0;
+my $td;
+
+sub record
+{
+  my $delay = int($td * 100);
+  my $xwd = "$pid-$seq-$delay.xwd";
+
+  system "xwd -id $window_id -out $xwd";
+  print "Screen recorded.\n";
+  $convert .= " -delay $delay $xwd";
+  $remove .= " $xwd";
+  $seq++;
+}
+
+open XINPUT, "xinput test-xi2 --root |";
+while (<XINPUT>) {
+ NEXT:
+  if (/^EVENT type (\d+) /) {
+    if ($1 eq '3') {
+      if ($recording) {
+        my $t = gettimeofday;
+        $td = $t - $time;
+        $time = $t;
+        record; }
+      while (<XINPUT>) {
+        goto NEXT unless /^\s+/;
+        if (/^\s+detail: 107/) {
+          if ($recording) {
+            print "STOP recording\n";
+            undef $time; }
+          else {
+            print "START recording\n";
+            $time = gettimeofday;
+            $td = 0;
+            record; }
+          $recording = !$recording; }}}}
+}
+close XINPUT;
+
+exit;
