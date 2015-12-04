@@ -1,8 +1,10 @@
 # xscreencast
+
 Record screen based on keyboard events into an animated GIF.  I wrote
-the script for a question at
-[Stackexchange](https://emacs.stackexchange.com/questions/18607/how-to-set-the-foreground-color-of-the-cursor-face).
-The question contains two examples.
+the script for a question at [Stackexchange][1].  The question
+contains two examples.
+
+[1]: https://emacs.stackexchange.com/questions/18607/how-to-set-the-foreground-color-of-the-cursor-face
 
 This is a screen shot after a recording session.
 
